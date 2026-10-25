@@ -20,10 +20,12 @@ class IntentClassification:
 # Regex patterns across English, French, Spanish, Japanese
 # Explicit non-deletion signals where user asks to retain profile/account
 EXPLICIT_NON_DELETION_PATTERNS = [
-    # English non-deletion requests (access, export, invoices, keeping account)
-    (r"keep\s+the\s+account(\s+as\s+it\s+is)?", "KEEP_ACCOUNT"),
+    (r"keep\s+(the|my)\s+account(\s+as\s+it\s+is)?", "KEEP_ACCOUNT"),
     (r"leave\s+my\s+profile(\s+and\s+purchase\s+history)?\s+in\s+place", "KEEP_PROFILE"),
-    (r"do\s+not\s+(delete|close|remove|erase)", "DO_NOT_DELETE"),
+    (r"(do\s*n[\'’]?t|do\s+not)\s+(delete|close|remove|erase|change)", "DO_NOT_DELETE"),
+    (r"not\s+(asking\s+for|requesting)\s+(deletion|erasure|closing|account\s+closure)", "NOT_ASKING_DELETION"),
+    (r"stop\s+(the\s+|all\s+)?(promotional|marketing)\s+emails?", "MARKETING_OPT_OUT"),
+    (r"still\s+(use|need)\s+(it|the\s+account|my\s+account)", "KEEP_ACCOUNT"),
     (r"copy\s+of\s+.*invoices?\s+for\s+my\s+records", "INVOICE_COPY_REQUEST"),
     (r"download\s+my\s+account\s+information\s+in\s+a\s+portable\s+format", "DATA_PORTABILITY_EXPORT"),
     (r"only\s+(want|need)\s+to\s+(update|change|correct)\s+my", "RECTIFICATION_REQUEST"),

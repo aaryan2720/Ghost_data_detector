@@ -92,6 +92,17 @@ class AuditOutputRow:
     deletion_status: str
     steps: List[Step] = field(default_factory=list)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "case_id": self.case_id,
+            "deletion_status": self.deletion_status,
+            "steps": [s.to_dict() for s in self.steps],
+        }
+
+    def steps_json(self) -> str:
+        import json
+        return json.dumps([s.to_dict() for s in self.steps])
+
 
 # Allowed constants
 ALLOWED_STATUSES = frozenset({"COMPLETE", "INCOMPLETE", "NOT_APPLICABLE"})

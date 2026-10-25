@@ -4,6 +4,7 @@ Main entry point for deterministic validation, public sample replay, and audit e
 """
 
 import argparse
+import csv
 from pathlib import Path
 import sys
 
@@ -39,7 +40,7 @@ def run_validation(output_path: Path, expected_cases_path: Path) -> int:
         expected_cases = None
         if expected_cases_path.is_file():
             requests = load_deletion_requests(expected_cases_path)
-            expected_cases = [r.case_id for r in requests]
+            expected_cases = sorted([r.case_id for r in requests])
 
         validated = validate_output_file(
             output_path,
@@ -109,14 +110,17 @@ def run_investigation(requests_path: Path, output_path: Path, dataset_dir: str =
         rows = []
         for req in requests:
             audit_row = investigator.investigate(req)
-            rows.append(audit_row.to_csv_row())
+            rows.append([audit_row.case_id, audit_row.deletion_status, audit_row.steps_json()])
+
+        # Sort rows by case_id ascending per contract §6.3
+        rows.sort(key=lambda r: r[0])
 
         # Write output CSV
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8", newline="") as f:
-            f.write("case_id,deletion_status,steps_json\n")
-            for r in rows:
-                f.write(r + "\n")
+            writer = csv.writer(f)
+            writer.writerow(["case_id", "deletion_status", "steps_json"])
+            writer.writerows(rows)
 
         print(f"Investigation complete: {len(rows)} predictions written to {output_path}")
         return 0

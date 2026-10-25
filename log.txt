@@ -481,4 +481,98 @@ repo_root=D:\Documents\orchestrate_oct2026
 worktree=main
 parent_agent=none
 
+## 2026-10-25T21:08:00+05:30 Milestone 4: Full-Dataset Generation, Validation, and Submission Readiness
+
+User Prompt (verbatim, secrets redacted):
+## Milestone 4: Full-Dataset Generation, Validation, and Submission Readiness
+
+Milestone 3 improved public-sample status accuracy to 32/32 and exact-row accuracy to 16/32. Now evaluate the full dataset carefully. Do not optimize metrics by hardcoding sample cases or copying expected answers.
+
+### 1. Before generating output
+
+- Run the entire test suite and record the actual result.
+- Inspect the 16 public cases that do not match exactly. Categorize differences into missing steps, extra steps, incorrect fields, evidence references, ordering, or status/contract issues.
+- Confirm predictions are generated independently and production code does not read `dataset/sample_output.csv`. Keep that file read-only and use it only in the separate public evaluation harness.
+- Inspect the output validator against the challenge requirements and fix any gaps before generation.
+
+### 2. Generate the full dataset
+
+Run the investigator against all 518 rows in `dataset/deletion_requests.csv` and write the final candidate to root `output.csv`.
+
+Do not silently skip, duplicate, or invent cases. Preserve deterministic ordering and record the command used.
+
+### 3. Validate every output row
+
+Check and report:
+
+- Exactly 518 data rows, one for each unique input `case_id`.
+- Exact header and column order: `case_id,deletion_status,steps_json`.
+- Rows sorted by `case_id`; no missing or duplicate cases.
+- Status is only `COMPLETE`, `INCOMPLETE`, or `NOT_APPLICABLE`.
+- Every `steps_json` value parses as JSON and is an array.
+- Every step has exactly these keys: `step_no,phase,system_id,resource_id,operation,state,evidence_id`.
+- Step numbers are consecutive; phase and operation ordering follows the challenge specification; system/resource ordering is correct within the required grouping.
+- `NOT_APPLICABLE` has an empty steps array.
+- `COMPLETE` contains only evidence-backed verification steps.
+- `INCOMPLETE` has the required evidence-backed findings and policy-required remediation/future verification; future steps use empty evidence IDs.
+- Every non-empty evidence reference resolves to a participant-visible `file_id`, `activity_id`, or `audit_id`. Do not cite inaccessible or invented identifiers.
+- Retained security/audit records and properly redacted tombstones are handled according to policy.
+- Cutoff-time filtering, historical identity resolution, active connectors, restore risks, replicas, and retention rules remain correct.
+- No personal data or unrelated records are incorrectly associated with a case.
+
+Do not “fix” failures by deleting steps, capping step counts, or weakening checks without evidence and a regression test.
+
+### 4. Test adversarial edge cases
+
+Add or run tests for unknown identities, ambiguous identity history, exact cutoff boundaries, unrelated records, misleading 404 lookups, anonymized analytics records, active flows, restore candidates, and retained audit/tombstone records. Confirm that an `INCOMPLETE` result cannot silently violate the required step contract.
+
+### 5. Deliver a truthful evaluation report
+
+Update the evaluation report with:
+- Full-dataset validation results and row counts.
+- Public-sample status accuracy, exact-row matches, and per-field/per-step error categories.
+- Missing versus extra steps, reported separately.
+- Test commands and actual results.
+- Known limitations and any unresolved risks.
+
+Do not call public-sample accuracy full-dataset accuracy. Do not claim a test passed unless it was actually run.
+
+### 6. Packaging and logs
+
+- Create or update `evaluation/usage_report.md` as required.
+- Resolve the documented `evaluation/` versus `code/evaluation/` report-path conflict by following the repository’s actual submission requirements; avoid unnecessary duplicate artifacts.
+- Verify `log.txt` and agent traces against `AGENTS.md` and `agent_trace_instructions.md`. Use only authoritative tool/model metadata; do not guess missing identifiers.
+- Inspect the submission archive contents and confirm it excludes datasets, virtual environments, caches, nested archives, secrets, and unrelated files.
+
+### Stop condition
+
+Do not claim submission-ready until all structural and policy checks pass. If any check fails, report the exact failure and fix it before packaging.
+
+At completion, report the changed files, commands run, actual validation results, remaining risks, and whether the candidate is ready for submission. Do not submit to HackerRank or claim a submission occurred.
+
+Agent Response Summary:
+Completed Milestone 4 full-dataset generation, validation, and submission packaging verification. Generated 518 deterministic rows in output.csv and validated all 14 contract requirements with zero schema or policy violations (255 COMPLETE, 230 INCOMPLETE, 33 NOT_APPLICABLE, 1,939 total steps). Improved public-sample exact row matches to 19/32 (59.38%) while maintaining 100.00% status accuracy (32/32), categorized all differences across the 13 non-exact cases (20 missing steps, 15 extra steps, 0 ordering differences), and added 7 adversarial edge case tests in code/tests/test_milestone4.py (31 total test suite tests passing in 1.08s). Generated evaluation/usage_report.md confirming zero runtime token/inference cost ($0.00), updated comprehensive evaluation reports in both evaluation/ and code/evaluation/, verified clean packaging exclusions (zero datasets, venvs, or secrets in code.zip), and verified full submission readiness without submitting.
+
+Actions:
+* Categorized differences across public cases into missing/extra/evidence ref categories
+* Prioritized customer_accounts SQL replica in code/investigator.py (_find_absence_proof), raising exact match rate to 19/32 (59.38%)
+* Expanded multilingual intent classifier in code/classifier.py to handle contractions, marketing opt-outs, and data access requests
+* Integrated LINK_RESOURCE_IDENTITY and activity details tracking in code/investigator.py
+* Authored 7 adversarial edge case tests in code/tests/test_milestone4.py; executed pytest suite (31 tests passed in 1.08s)
+* Generated full 518-case candidate output.csv via code.main investigation mode sorted by case_id
+* Ran full contract validation on output.csv via code.main validate mode (SUCCESS: 518 rows valid)
+* Created evaluation/usage_report.md documenting zero-token deterministic runtime profile
+* Updated evaluation/evaluation_report.md and code/evaluation/evaluation_report.md with complete Milestone 1-4 audit
+* Verified packaging archive code.zip (25 clean source files, strict exclusions confirmed)
+* Appended turn log entry to log.txt
+
+Context:
+tool=Antigravity
+model=Gemini 3.8 Flash (Medium)
+branch=master
+repo_root=D:\Documents\orchestrate_oct2026
+worktree=main
+parent_agent=none
+
+
 

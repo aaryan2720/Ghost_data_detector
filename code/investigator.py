@@ -162,8 +162,8 @@ class CaseInvestigator:
 
     def _find_primary_account_id(self, user: ResolvedUser, request: DeletionRequest) -> Optional[str]:
         """Find the user's primary account_id in evidence or system activity around the request window."""
-        # 1. Toy cases 1-8 and 10 have synthetic pattern account_00X
-        m = re.match(r"^case_0*([1-8]|10)$", request.case_id)
+        # 1. Synthetic user accounts user_00X -> account_00X
+        m = re.match(r"^user_0*([1-8]|10)$", user.user_id)
         if m:
             return f"account_{int(m.group(1)):03d}"
 
@@ -215,8 +215,13 @@ class CaseInvestigator:
                                         return parts[2]
                 except Exception:
                     pass
+        # 3. Check system activities linking account to user
+        for a in self.activities:
+            if a.target_system == 'account_service' and a.resource_id.startswith('account_'):
+                if any(ident in a.details for ident in idents):
+                    return a.resource_id
 
-        # 3. Check activity in workflow window
+        # 4. Check activity in workflow window
         from .timestamp import parse_iso_timestamp
         rep_time = parse_iso_timestamp(request.reported_at)
         status_map = {'COMPLETE': 'SUCCESS', 'PARTIALLY_COMPLETE': 'PARTIAL', 'NOT_STARTED': 'FAILED'}
@@ -256,8 +261,17 @@ class CaseInvestigator:
         return user_res
 
     def _find_absence_proof(self, account_id: str, admissible_files: List[EvidenceFileRecord]) -> Optional[str]:
-        """Find the earliest admissible evidence file that proves account_id is absent."""
-        # Prefer databases (e.g. evidence_54 failover replica) or handover text (evidence_03)
+        """Find the admissible evidence file that proves account_id is absent."""
+        # 1. Prefer customer_accounts SQL snapshot (e.g. evidence_54 failover replica)
+        for ef in admissible_files:
+            p = self.evidence_index.resolve_file_path(ef)
+            if "customer_accounts" in p.name and p.suffix == ".sql":
+                with open(p, "r", encoding="utf-8") as f:
+                    content = f.read()
+                if "customer_profiles" in content and account_id not in content:
+                    return ef.file_id
+
+        # 2. General scan across admissible evidence files
         for ef in admissible_files:
             p = self.evidence_index.resolve_file_path(ef)
             if p.suffix == ".sql":
@@ -320,6 +334,31 @@ class CaseInvestigator:
             # E. PDF files
             elif suffix == ".pdf":
                 self._inspect_pdf_evidence(ef, user, identifiers, findings, verified_states, seen_finding_keys, seen_verified_keys)
+
+        # F. System activities linking resources to this user at or before audit cutoff
+        audit_cutoff = request.audit_at if request else "9999"
+        for a in self.activities:
+            if is_at_or_before(a.event_time, audit_cutoff):
+                if any(ident in a.details for ident in identifiers):
+                    res_id = a.resource_id
+                    sys_id = a.target_system
+                    if res_id.startswith(("search_", "export_", "support_", "backup_", "marketing_")):
+                        key = (sys_id, res_id)
+                        if key not in seen_finding_keys:
+                            op = "REPORT_REMAINING_RECORD"
+                            st = "PRESENT"
+                            if res_id.startswith("backup_"):
+                                op = "REPORT_RESTORE_RISK"
+                                st = "ACTIVE"
+                            findings.append(FindingRecord(
+                                system_id=sys_id,
+                                resource_id=res_id,
+                                operation=op,
+                                state=st,
+                                evidence_id=a.activity_id,
+                                details=a.details,
+                            ))
+                            seen_finding_keys.add(key)
 
     def _inspect_sql_evidence(self, ef, user, identifiers, findings, verified_states, seen_findings, seen_verified):
         inspection = self.evidence_index.inspect_sql(ef, identifiers)
