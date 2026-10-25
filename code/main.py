@@ -81,19 +81,69 @@ def run_replay(candidate_path: Path, sample_output_path: Path) -> int:
         return 1
 
 
+def run_investigation(requests_path: Path, output_path: Path, dataset_dir: str = "dataset") -> int:
+    print(f"Running independent investigation on {requests_path} -> {output_path}...")
+    try:
+        from code.evidence import EvidenceIndex
+        from code.identity import IdentityResolver
+        from code.investigator import CaseInvestigator
+        from code.loader import (
+            load_deletion_requests,
+            load_deletion_rules,
+            load_evidence_manifest,
+            load_system_activity,
+            load_user_audit_log,
+            load_user_identities,
+        )
+
+        identities = load_user_identities(f"{dataset_dir}/user_identities.csv")
+        audit = load_user_audit_log(f"{dataset_dir}/user_audit_log.csv")
+        rules = load_deletion_rules(f"{dataset_dir}/deletion_rules.csv")
+        activities = load_system_activity(f"{dataset_dir}/system_activity.csv")
+        ev_index = EvidenceIndex(f"{dataset_dir}/evidence_files.csv", dataset_dir)
+        resolver = IdentityResolver(identities, audit)
+
+        investigator = CaseInvestigator(resolver, ev_index, rules, activities)
+        requests = load_deletion_requests(requests_path)
+
+        rows = []
+        for req in requests:
+            audit_row = investigator.investigate(req)
+            rows.append(audit_row.to_csv_row())
+
+        # Write output CSV
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w", encoding="utf-8", newline="") as f:
+            f.write("case_id,deletion_status,steps_json\n")
+            for r in rows:
+                f.write(r + "\n")
+
+        print(f"Investigation complete: {len(rows)} predictions written to {output_path}")
+        return 0
+    except Exception as e:
+        print(f"Investigation failed: {e}")
+        return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Ghost Data Still Exists: Audit Agent")
     parser.add_argument(
         "--mode",
-        choices=["validate", "replay", "verify-samples"],
+        choices=["investigate", "validate", "replay", "verify-samples", "evaluate"],
         default="verify-samples",
         help="Execution mode (default: verify-samples)",
+    )
+    parser.add_argument(
+        "--requests",
+        type=Path,
+        default=Path("dataset/sample_deletion_requests.csv"),
+        help="Path to input requests CSV",
     )
     parser.add_argument(
         "--output",
         type=Path,
         default=Path("dataset/sample_output.csv"),
-        help="Path to output CSV to validate or replay",
+        help="Path to output CSV to write, validate, or replay",
     )
     parser.add_argument(
         "--expected",
@@ -101,11 +151,19 @@ def main() -> int:
         default=Path("dataset/sample_deletion_requests.csv"),
         help="Path to requests CSV with expected case IDs",
     )
+    parser.add_argument(
+        "--truth",
+        type=Path,
+        default=Path("dataset/sample_output.csv"),
+        help="Path to ground truth CSV for evaluation",
+    )
 
     args = parser.parse_args()
 
-    if args.mode == "verify-samples":
-        print("Running deterministic public-sample contract verification...")
+    if args.mode == "investigate":
+        return run_investigation(args.requests, args.output)
+    elif args.mode == "verify-samples":
+        print("Running deterministic public-sample contract verification (fixture baseline)...")
         val_code = run_validation(Path("dataset/sample_output.csv"), Path("dataset/sample_deletion_requests.csv"))
         if val_code != 0:
             return val_code
@@ -114,7 +172,11 @@ def main() -> int:
     elif args.mode == "validate":
         return run_validation(args.output, args.expected)
     elif args.mode == "replay":
-        return run_replay(args.output, Path("dataset/sample_output.csv"))
+        return run_replay(args.output, args.truth)
+    elif args.mode == "evaluate":
+        from code.evaluation.main import run_independent_investigator_evaluation
+        run_independent_investigator_evaluation(args.requests, args.truth)
+        return 0
 
     return 0
 

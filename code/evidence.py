@@ -12,6 +12,7 @@ Strict rules:
 from dataclasses import dataclass, field
 import json
 from pathlib import Path
+import re
 import sqlite3
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -66,6 +67,22 @@ class LogInspectionResult:
     file_path: str
     captured_at: str
     matched_lines: List[LogLineMatch] = field(default_factory=list)
+
+
+@dataclass
+class PdfPageMatch:
+    page_no: int
+    text_content: str
+    resource_id: Optional[str]
+    matched_tokens: List[str]
+
+
+@dataclass
+class PdfInspectionResult:
+    file_id: str
+    file_path: str
+    captured_at: str
+    matched_pages: List[PdfPageMatch] = field(default_factory=list)
 
 
 class EvidenceIndex:
@@ -209,30 +226,84 @@ class EvidenceIndex:
         )
 
     def inspect_log(self, record: EvidenceFileRecord, search_terms: Set[str]) -> LogInspectionResult:
-        """Inspect log or plain-text file line-by-line, preserving line number provenance."""
+        """Inspect log or plain-text file line-by-line with distributed trace correlation."""
         file_path = self.resolve_file_path(record)
         if not file_path.is_file():
             raise FileNotFoundError(f"Log evidence file missing: {file_path}")
 
         norm_terms = {t.strip().lower() for t in search_terms if t and t.strip()}
-        matched_lines: List[LogLineMatch] = []
-
+        
         with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-            for line_no, line in enumerate(f, start=1):
-                line_lower = line.lower()
-                hits = [term for term in norm_terms if term in line_lower]
-                if hits:
-                    matched_lines.append(
-                        LogLineMatch(
-                            line_no=line_no,
-                            line_content=line.strip(),
-                            matched_tokens=hits,
-                        )
+            all_lines = f.readlines()
+
+        # Pass 1: Correlate trace_ids from lines that match any search term directly
+        correlated_traces = set()
+        for line in all_lines:
+            line_lower = line.lower()
+            if any(term in line_lower for term in norm_terms):
+                m = re.search(r"trace_id=([a-zA-Z0-9_\-]+)", line)
+                if m:
+                    correlated_traces.add(m.group(1))
+
+        # Pass 2: Collect lines that have direct token hits OR belong to a correlated trace
+        matched_lines: List[LogLineMatch] = []
+        for line_no, line in enumerate(all_lines, start=1):
+            line_lower = line.lower()
+            hits = [term for term in norm_terms if term in line_lower]
+            m = re.search(r"trace_id=([a-zA-Z0-9_\-]+)", line)
+            line_trace = m.group(1) if m else None
+
+            if hits or (line_trace and line_trace in correlated_traces):
+                matched_lines.append(
+                    LogLineMatch(
+                        line_no=line_no,
+                        line_content=line.strip(),
+                        matched_tokens=hits if hits else [f"trace:{line_trace}"],
                     )
+                )
 
         return LogInspectionResult(
             file_id=record.file_id,
             file_path=str(file_path),
             captured_at=record.captured_at,
             matched_lines=matched_lines,
+        )
+
+    def inspect_pdf(self, record: EvidenceFileRecord, search_terms: Set[str]) -> PdfInspectionResult:
+        """Inspect PDF document text using pypdf, extracting resource IDs and matched tokens."""
+        file_path = self.resolve_file_path(record)
+        if not file_path.is_file():
+            raise FileNotFoundError(f"PDF evidence file missing: {file_path}")
+
+        import re
+        norm_terms = {t.strip().lower() for t in search_terms if t and t.strip()}
+        matched_pages: List[PdfPageMatch] = []
+
+        try:
+            import pypdf
+            reader = pypdf.PdfReader(str(file_path))
+            for page_no, page in enumerate(reader.pages, start=1):
+                page_text = page.extract_text() or ""
+                page_lower = page_text.lower()
+                hits = [t for t in norm_terms if t in page_lower]
+                if hits:
+                    # Look for resource pattern like support_001, account_007, etc.
+                    m = re.search(r"\b([a-z]+_\d+)\b", page_text)
+                    res_id = m.group(1) if m else None
+                    matched_pages.append(
+                        PdfPageMatch(
+                            page_no=page_no,
+                            text_content=page_text,
+                            resource_id=res_id,
+                            matched_tokens=hits,
+                        )
+                    )
+        except Exception:
+            pass
+
+        return PdfInspectionResult(
+            file_id=record.file_id,
+            file_path=str(file_path),
+            captured_at=record.captured_at,
+            matched_pages=matched_pages,
         )

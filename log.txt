@@ -200,3 +200,285 @@ repo_root=D:\Documents\orchestrate_oct2026
 worktree=main
 parent_agent=none
 
+## [2026-10-25T04:59:40.0000000Z] Read-only audit of Milestone 1 and independence verification
+
+User Prompt (verbatim, secrets redacted):
+Continue the October 2026 Ghost Data Still Exists challenge in the existing repository.
+
+Before implementing Milestone 2, perform a focused, read-only audit of Milestone 1. Do not modify dataset files, sample_output.csv, or output.csv. Append required activity to log.txt according to AGENTS.md.
+
+## Critical question: is the reported 100% accuracy independent?
+
+Inspect code/replay.py, code/evaluation/main.py, code/tests/test_milestone1.py, code/main.py, and the relevant validator/evidence modules.
+
+Determine exactly how the reported metrics are calculated.
+
+Answer explicitly:
+1. Does the program independently generate a deletion status and steps from a request and its evidence?
+2. Or does it read sample_output.csv and compare that file against itself or another copy of the same expected answers?
+3. Which metrics validate generated decisions, and which merely validate format or reproduce expected data?
+4. Can the current program generate a valid answer for an unseen case without reading an expected output for that case?
+
+Do not infer from function names. Trace the actual execution path and cite relevant functions/files.
+
+## Adversarial checks
+
+Run concrete tests that establish:
+
+- If an expected sample step is deliberately changed in an isolated temporary copy, does the evaluator detect the difference?
+- If an evidence ID is invalid, is the output rejected?
+- If a current email has multiple conflicting historical identity links, does resolution fail safely?
+- If evidence occurs after audit_at, can it influence a case's status or findings?
+- If activity claims deletion succeeded but a replica still contains the record, can the current implementation independently identify the contradiction?
+- Can the current pipeline classify a non-deletion request as NOT_APPLICABLE without consulting sample_output.csv?
+
+Use temporary test data where needed. Never modify the original public fixture files. Report commands and actual results.
+
+## Contract and implementation audit
+
+Check the code against AGENTS.md and the problem statement:
+- exact output columns and step-object keys;
+- allowed operation/state combinations;
+- evidence IDs and provenance;
+- phase/operation/system/resource ordering;
+- status-specific constraints;
+- all 518 case IDs and sorted output requirements;
+- policy-retained records and stable tombstone identifiers;
+- required evaluation/usage reports and packaging paths;
+- logging completeness and actual runtime/model metadata.
+
+Separate confirmed defects from unimplemented capabilities and hypotheses.
+
+## Deliverable
+
+Provide a compact table with:
+- claim made by the previous report;
+- code path inspected;
+- verification performed;
+- observed result;
+- defect or remaining risk;
+- next action.
+
+Do not claim full-solution accuracy from validator or replay metrics. Do not claim a test passed unless it was actually run. Do not start broad Milestone 2 implementation until this audit is complete.
+
+Finish by recommending the single highest-value next action.
+
+Agent Response Summary:
+Conducted a read-only audit of the Milestone 1 codebase and executed 6 adversarial test scenarios in temporary memory. Explicitly established that the 100% accuracy reported in Milestone 1 measured self-consistency and contract-conformance of sample_output.csv rather than independent prediction generation. Verified through concrete tests that the evaluator detects deliberate step mutations, rejects invalid evidence IDs, isolates conflicting identities with AmbiguousIdentityError, and excludes post-cutoff evidence. Documented confirmed capabilities vs. unbuilt decision/classification logic, and formulated the prioritized next action for Milestone 2.
+
+Actions:
+* Traced execution paths in code/replay.py, code/evaluation/main.py, code/main.py, and code/tests/test_milestone1.py
+* Ran 6 isolated adversarial checks via scratch/adversarial_checks.py
+* Appended per-turn log entry to log.txt
+
+Context:
+tool=Antigravity
+model=Gemini 3.8 Flash (Medium)
+branch=master
+repo_root=D:\Documents\orchestrate_oct2026
+worktree=main
+parent_agent=none
+
+## [2026-10-25T05:40:00.0000000Z] Implement Milestone 2 genuine investigation pipeline and evaluation
+
+User Prompt (verbatim, secrets redacted):
+Proceed to Milestone 2 for HackerRank Orchestrate October 2026, “Ghost Data Still Exists.”
+
+First reread AGENTS.md and the problem statement. Preserve existing files and logs, append required logging entries, and do not fabricate runtime metadata or evaluation results.
+
+## Objective
+
+Build the first genuine case-investigation pipeline. It must derive decisions from deletion requests, identity history, participant-visible evidence, system activity, and deletion_rules.csv. It must not use sample_output.csv as a source of predictions.
+
+### 1. Correct evaluation semantics first
+
+- Change evaluation reporting so validator correctness, fixture replay, and independently generated prediction accuracy are clearly separate metrics.
+- Never report sample self-comparison as model or prediction accuracy.
+- Keep sample_output.csv read-only and use it only as an expected result for evaluation.
+- Add a test proving the generation path does not read sample_output.csv.
+- Preserve existing regression tests.
+
+### 2. Implement the minimal end-to-end investigator
+
+Create focused components as appropriate, including:
+
+- `classifier.py`: distinguish deletion requests from clearly unrelated request types. Use explicit multilingual patterns and conservative handling of ambiguity. Do not classify solely from one keyword when the request context contradicts it.
+- `investigator.py`: resolve current and historical identities, retrieve relevant admissible evidence, inspect records and flows, apply deletion rules, and construct a case assessment with provenance.
+- A small orchestration layer that converts the assessment into the required status and ordered steps.
+
+Use the existing loader, identity, timestamp, evidence, model, and validator components where appropriate. Avoid duplicate implementations.
+
+### 3. Evidence-driven decision rules
+
+- Apply both file-capture cutoff and record/event-time cutoff when the specification requires both.
+- Match actual identity/resource data, not just filenames or generic file presence.
+- Distinguish a workflow's reported success from verified resource state.
+- Inspect SQL records structurally and correlate primary and replica records.
+- Identify active sync/import paths and restore risks.
+- Apply the correct treatment for each resource type: delete, redact, anonymize, retain, disable flow, or block restore.
+- Preserve policy-required audit records and stable tombstone references while removing prohibited direct identifiers.
+- If identity or evidence is ambiguous, fail safely and report the uncertainty internally rather than inventing facts.
+- Findings must cite participant-visible evidence IDs or activity/audit IDs as permitted by the contract. Future proposed actions and verifications must use empty evidence IDs.
+- Compute COMPLETE versus INCOMPLETE from the reconstructed state and policy, not from sample labels or reported status alone.
+
+### 4. Build in vertical slices
+
+Start with a small, explicit set of representative cases covering:
+1. A genuinely complete case.
+2. A surviving primary or replica record.
+3. A historical email.
+4. An active data flow.
+5. A restore risk.
+6. A retained record requiring redaction or anonymization.
+7. A clearly non-deletion request, if present in the actual dataset.
+8. An ambiguous identity or insufficient-evidence case.
+
+For each slice, show the evidence facts, policy decision, generated steps, and final status. Add regression tests before expanding coverage.
+
+### 5. Evaluate honestly
+
+- Test the investigator on public cases without feeding it expected outputs.
+- Compare generated results against sample_output.csv only after generation.
+- Report status accuracy, exact-step accuracy, field-level accuracy, and per-case discrepancies separately.
+- Do not tune to the public samples by hardcoding case IDs or expected outputs.
+- Run the complete test suite and report actual results.
+- Keep OCR/PDF/image extraction as a clearly stated capability gap until implemented and tested.
+
+### 6. Stop condition
+
+Do not yet generate and submit the final 518-row output. First deliver the working investigator, tests, honest independent evaluation, and a prioritized list of remaining blockers.
+
+Report changed files, actual test results, examples of generated cases, and the next highest-value milestone. Stop for review before expanding to all 518 cases.
+
+Agent Response Summary:
+Built and verified the first genuine, independent case-investigation pipeline (`code/classifier.py`, `code/investigator.py`, `code/main.py`). Decoupled evaluation metrics so validator verification (fixture replay baseline) and independent model prediction accuracy are reported separately without self-comparison shortcuts. Added `code/tests/test_milestone2.py` proving generation never reads `sample_output.csv` and validating the 8 vertical slices. Achieved 90.62% case status accuracy on public samples without answer access, with all 20 regression tests passing.
+
+Actions:
+* Implemented multilingual intent classification in code/classifier.py
+* Implemented evidence-driven investigation and policy synthesis in code/investigator.py
+* Rewrote code/evaluation/main.py to separate fixture replay from independent model evaluation
+* Updated code/main.py with --mode investigate and --mode evaluate
+* Added 9 unit and slice regression tests in code/tests/test_milestone2.py
+* Updated code/evaluation/evaluation_report.md with transparent metrics and prioritized blockers
+* Appended turn log entry to log.txt
+
+Context:
+tool=Antigravity
+model=Gemini 3.8 Flash (Medium)
+branch=master
+repo_root=D:\Documents\orchestrate_oct2026
+
+## [2026-10-25T07:29:00.0000000Z] Milestone 3: Trace correlation, step scoping, and public evaluation
+
+User Prompt (verbatim, secrets redacted):
+Continue HackerRank Orchestrate October 2026, “Ghost Data Still Exists.”
+
+Implement Milestone 3: Trace Correlation, Step Envelope Scoping, and Full Public Evaluation.
+
+Read AGENTS.md and the problem statement first. Preserve existing work and append required entries to log.txt. Do not fabricate model metadata or test results. Keep sample_output.csv read-only and never use it to generate predictions.
+
+## Objective
+
+Improve the independent investigator based on measured failures. Do not generate the final 518-row output until the public evaluation and contract checks are complete.
+
+## 1. Establish a reproducible baseline
+
+Run the existing tests and independent public evaluation before changing code.
+
+Record:
+- status accuracy;
+- exact case-level row matches;
+- per-field accuracy;
+- missing, extra, and incorrect steps;
+- per-case expected and generated step counts;
+- the exact three status-mismatched cases;
+- actual commands and results.
+
+Preserve this baseline so improvements can be compared fairly.
+
+## 2. Resolve the three status mismatches
+
+Investigate cases 10, 15, and 17 end to end.
+
+For each case, trace:
+- request timestamps and audit_at;
+- current and historical identifiers;
+- relevant deletion-worker activities within the applicable workflow window;
+- target systems and resource IDs;
+- corroborating SQL/JSON/log evidence;
+- applicable deletion rules;
+- why the generated status differs from the expected status.
+
+Do not assume the earlier report's proposed cause is correct without verifying it. Add a regression test for each confirmed root cause.
+
+## 3. Fix step overgeneration
+
+The current investigator generates 306 steps against 193 expected steps. Find the actual source of overgeneration.
+
+Define and implement a clear evidence-to-step rule:
+- only include resources relevant to the resolved identity and the case's applicable audit state;
+- distinguish workflow-relevant events from unrelated historical snapshots;
+- apply both event-time and capture-time restrictions where required;
+- generate findings only for supported conditions;
+- generate remediation only for policy-required actions;
+- generate verification only for the required final-state checks, not every observed snapshot;
+- preserve mandatory flow-disable and restore-blocking dependencies;
+- deduplicate equivalent resource/action steps without merging distinct resources;
+- retain required security audit records and stable tombstone identifiers.
+
+Do not simply cap the number of steps or remove steps until the score improves. Every omission and inclusion must be justified by the specification, evidence, or policy.
+
+## 4. Improve the evaluation report
+
+After changes, run the independent evaluator and compare with the recorded baseline.
+
+Report:
+- status accuracy;
+- exact full-row match rate;
+- field-level accuracy;
+- expected versus generated step count;
+- per-case differences;
+- regressions introduced and fixes achieved.
+
+Keep fixture self-replay metrics separate from independent prediction metrics. Never describe validator correctness as prediction accuracy.
+
+## 5. Assess OCR and other evidence gaps
+
+Determine whether screenshots or PDF contents are necessary to resolve any current mismatch or missing step. If they are, implement the smallest appropriate extraction capability and test it against actual evidence. If not, document why the current public errors do not require it.
+
+Do not claim OCR, vision, or PDF extraction is implemented unless the pipeline actually performs extraction and has tests.
+
+## 6. Acceptance gate
+
+Before considering full-dataset generation:
+- all existing and new tests pass;
+- all three status mismatches are explained and addressed or explicitly documented as unresolved;
+- step overgeneration is materially reduced for evidence-backed reasons;
+- output validation passes;
+- the evaluation report distinguishes confirmed results from assumptions;
+- no sample-specific hardcoding or expected-output leakage is introduced.
+
+Do not generate the final 518-row output yet. Stop after the public evaluation and report changed files, actual metrics, remaining risks, and the next recommendation.
+
+Agent Response Summary:
+Completed Milestone 3 end-to-end. Root-caused and resolved all three status mismatches (case_10, case_15, case_17) using two-pass distributed trace correlation and service normalization in microservice logs, achieving 100.00% status accuracy (32/32). Eliminated step overgeneration by implementing grounded evidence-to-step scoping (bounding HTTP 404 lookups and anonymized analytics profiles to grounded user workflow resources), reducing generated steps from 306 down to 189 (against 193 expected, a -2% difference) and raising exact sequence matches from 0% to 50.00% (16/32). Authored 4 new regression tests in code/tests/test_milestone3.py (all 24 test suite tests passing), updated evaluation_report.md across root and code/ paths, assessed the image/OCR gap honestly (confirming 0 image dependencies in public cases), and held full 518-case output generation at the acceptance gate.
+
+Actions:
+* Established reproducible baseline: 29/32 status accuracy, 0/32 exact matches, 306 steps generated
+* Implemented two-pass distributed trace correlation in code/evidence.py (inspect_log)
+* Fixed case_10, case_15, case_17 in code/investigator.py by normalizing services, correlating trace IDs, and recognizing restore candidate evaluation
+* Implemented grounded evidence-to-step scoping in code/investigator.py for profile lookups and analytics records
+* Authored 4 regression tests in code/tests/test_milestone3.py and executed pytest suite (24 passed)
+* Executed independent evaluation runner: 32/32 (100.00%) status accuracy, 16/32 (50.00%) exact match rate, 189 generated steps
+* Updated code/evaluation/evaluation_report.md and evaluation/evaluation_report.md
+* Appended turn log entry to log.txt
+
+Context:
+tool=Antigravity
+model=Gemini 3.8 Flash (Medium)
+branch=master
+repo_root=D:\Documents\orchestrate_oct2026
+worktree=main
+parent_agent=none
+
+
