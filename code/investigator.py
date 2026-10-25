@@ -247,16 +247,13 @@ class CaseInvestigator:
         return None
 
     def _find_user_activity_resources(self, user: ResolvedUser, request: DeletionRequest) -> Set[str]:
-        """Find resources targeted by deletion_worker for this user during workflow."""
-        from .timestamp import parse_iso_timestamp
-        rep_time = parse_iso_timestamp(request.reported_at)
+        """Find resources targeted by deletion_worker for this user with direct identity grounding."""
+        user_idents = {user.user_id.lower(), request.email.lower()} | {e.lower() for e in user.all_emails} | set(user.all_phones)
         user_res = set()
         for a in self.activities:
             if a.source_system == 'deletion_worker':
                 if is_at_or_before(request.requested_at, a.event_time):
-                    a_time = parse_iso_timestamp(a.event_time)
-                    delta_sec = (rep_time - a_time).total_seconds()
-                    if -900 <= delta_sec <= 7200:
+                    if any(ident in a.details.lower() for ident in user_idents):
                         user_res.add(a.resource_id)
         return user_res
 
@@ -927,13 +924,13 @@ class CaseInvestigator:
                     ))
                     seen_verified.add(key)
 
-            # Analytics hit (un-anonymized profile hit)
-            elif system_id == "analytics_platform" and ("rows=1" in line or "status=found" in line):
+            # Analytics hit (un-anonymized profile hit or read completed with non-null email)
+            elif system_id == "analytics_platform" and ("rows=1" in line or "status=found" in line or ("analytics_profile_read_completed" in line and "email=" in line and "email=null" not in line)):
                 if key not in seen_findings:
                     findings.append(FindingRecord(
                         system_id="analytics_platform",
                         resource_id=res_id,
-                        operation="REPORT_REMAINING_RECORD",
+                        operation="REPORT_EXPOSED_PII",
                         state="PRESENT",
                         evidence_id=ef.file_id,
                     ))
@@ -951,8 +948,8 @@ class CaseInvestigator:
                     ))
                     seen_findings.add(key)
 
-            # Support ticket PII scan
-            elif system_id == "support_platform" and ("message_pii_scan" in line or "matched_value=" in line):
+            # Support ticket PII scan or read completed with non-null requester_email
+            elif system_id == "support_platform" and ("message_pii_scan" in line or "matched_value=" in line or ("support_ticket_read_completed" in line and "requester_email=" in line and "requester_email=null" not in line)):
                 if key not in seen_findings:
                     findings.append(FindingRecord(
                         system_id="support_platform",

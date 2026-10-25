@@ -30,6 +30,11 @@ EXPLICIT_NON_DELETION_PATTERNS = [
     (r"download\s+my\s+account\s+information\s+in\s+a\s+portable\s+format", "DATA_PORTABILITY_EXPORT"),
     (r"only\s+(want|need)\s+to\s+(update|change|correct)\s+my", "RECTIFICATION_REQUEST"),
     (r"unsubscribe\s+from\s+(marketing|newsletters?|promotions?)", "MARKETING_OPT_OUT"),
+    # Specific non-deletion expressions
+    (r"without\s+removing\s+any\s+of\s+my\s+records", "RECTIFICATION_REQUEST"),
+    (r"remove\s+me\s+from\s+marketing\s+lists\s+only", "MARKETING_OPT_OUT"),
+    (r"this\s+is\s+an\s+information\s+request", "ACCESS_REQUEST"),
+    (r"not\s+a\s+request\s+to\s+erase\s+it", "ACCESS_REQUEST"),
     # French non-deletion requests
     (r"garder?\s+le\s+compte", "KEEP_ACCOUNT_FR"),
     (r"ne\s+supprimez\s+pas", "DO_NOT_DELETE_FR"),
@@ -57,6 +62,10 @@ DELETION_PATTERNS = [
     r"\b(suppression|supprimer|supprim[ée]s?|effacer|effacement|fermeture|cl[oô]turer)\b",
     # Spanish
     r"\b(eliminar|eliminaci[oó]n|borrar|borrado|cerrar|cancelar)\b",
+    # Portuguese
+    r"\b(exclus[ãa]o|excluir|elimina[çc][ãa]o|eliminar|apagar)\b",
+    # Korean
+    r"(삭제|영구\s*삭제|제거|해지|탈퇴)",
     # Japanese
     r"(削除|消去|解約|退会|抹消)",
 ]

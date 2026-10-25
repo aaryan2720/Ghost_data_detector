@@ -574,5 +574,77 @@ repo_root=D:\Documents\orchestrate_oct2026
 worktree=main
 parent_agent=none
 
+## [2026-10-25T16:13:10.0000000Z] Milestone 5 independent evidence-grounding audit
 
+User Prompt (verbatim, secrets redacted):
+## Milestone 5: Independent Evidence-Grounding Audit
 
+Audit the existing `output.csv` before submission. Do not regenerate it or modify production logic until you have identified concrete defects.
+
+### 1. Audit every public-sample mismatch
+For all 13 cases with differences:
+- Compare expected and generated steps field by field.
+- Separate missing, extra, incorrect, misordered, and wrongly cited steps.
+- Explain each discrepancy using participant-visible evidence.
+- Distinguish a genuine solution defect from a potentially acceptable alternative only when the challenge specification supports that distinction.
+- Do not copy expected sample rows into production output.
+
+### 2. Audit evidence attribution across all 518 cases
+Investigate every step whose resource or audit record was associated by execution-window proximity rather than a direct identity link.
+
+For each association, establish whether it is supported by:
+- a direct user ID, current or historical identifier, or explicit identity-link event;
+- a correlated trace or workflow identifier; or
+- another unambiguous participant-visible reference.
+
+If the evidence is ambiguous, do not present the association as confirmed. Record the case and the uncertainty. Never attach a record to a user merely because it occurred near the same time.
+
+### 3. Check decision correctness, not just file shape
+Review all `NOT_APPLICABLE` cases for false non-deletion classifications, all `COMPLETE` cases for unsupported completion claims, and all `INCOMPLETE` cases for missing findings or unsupported remediation.
+
+Pay special attention to:
+- historical identities and ambiguous matches;
+- exact audit cutoffs and post-cutoff evidence;
+- active connectors and restore paths;
+- policy-retained records and tombstone redaction;
+- account/resource ID mapping across replicas;
+- evidence references and the distinction between observed facts and planned future actions.
+
+### 4. Add regression tests only for verified defects
+For every confirmed defect, add a minimal reproducible test, fix the underlying cause, rerun the full test suite, regenerate `output.csv`, and rerun the validator. Do not weaken rules just to improve public-sample metrics.
+
+### 5. Report honestly
+Provide:
+- number of public cases reviewed and remaining mismatches;
+- missing and extra step counts separately;
+- number of proximity-based associations reviewed, supported, corrected, and unresolved;
+- any confirmed decision or evidence-attribution errors;
+- final test and validator outputs;
+- a clear list of remaining risks.
+
+Keep the existing candidate intact until the audit is complete. Do not submit to HackerRank. If any material evidence-attribution issue remains unresolved, do not label the candidate fully verified.
+
+Agent Response Summary:
+Conducted a thorough independent evidence-grounding audit of output.csv and all 32 public fixture cases. Identified 4 verified defects: 26 false non-deletion classifications caused by missing Korean and Portuguese deletion patterns in code/classifier.py; 3 false deletion classifications on opt-out and access requests (cases 537, 538, 539); brittle regex matching in code/investigator.py log inspection that missed exposed email fields in read completion logs (case 18); and unconstrained 2-hour deletion_worker proximity in _find_user_activity_resources that cross-attributed unrelated anonymized analytics profiles across concurrent user deletions. Added 4 regression tests in code/tests/test_milestone5.py (35 tests total passing in 1.16s), corrected the defects in production code, regenerated output.csv, and revalidated all 518 rows with zero schema or contract violations without submitting to HackerRank.
+
+Actions:
+* Audited all 13 public mismatch cases field-by-field, categorizing missing vs extra steps
+* Audited 665 proximity-based step instances across 470 cases in candidate output.csv
+* Audited all 33 NOT_APPLICABLE cases, discovering 26 false non-deletion cases in Korean and Portuguese and 3 false deletion cases (cases 537, 538, 539)
+* Authored 4 automated regression tests in code/tests/test_milestone5.py and reproduced failures
+* Fixed multilingual deletion patterns and negative opt-out phrasing in code/classifier.py
+* Fixed log evidence exposed PII parser in code/investigator.py for read completion events
+* Replaced blind temporal proximity window in code/investigator.py with strict identity grounding
+* Ran pytest test suite (all 35 tests passed in 1.16s)
+* Regenerated 518 rows in output.csv via code.main investigation mode
+* Ran full contract validation on output.csv via code.main validate mode (SUCCESS: 518 rows valid)
+* Updated evaluation/evaluation_report.md and code/evaluation/evaluation_report.md with complete audit metrics
+* Appended turn entry to log.txt and verified tool and model fields
+
+Context:
+tool=Antigravity
+model=Gemini 3.8 Flash (Medium)
+branch=master
+repo_root=D:\Documents\orchestrate_oct2026
+worktree=main
+parent_agent=none
