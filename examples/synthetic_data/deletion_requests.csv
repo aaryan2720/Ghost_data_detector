@@ -1,0 +1,4 @@
+case_id,email,requested_at,reported_status,reported_at,audit_at,request_text
+syn_case_001,alice.example@testcorp.internal,2026-06-01T12:00:00Z,COMPLETE,2026-06-02T10:00:00Z,2026-06-05T00:00:00Z,Please permanently delete my account and all associated personal data under GDPR Article 17.
+syn_case_002,bob.old@sample.com,2026-07-01T14:00:00Z,COMPLETE,2026-07-02T11:00:00Z,2026-07-05T00:00:00Z,I request permanent erasure of my data from all company databases and backups.
+syn_case_003,charlie.mock@testcorp.internal,2026-08-01T09:00:00Z,COMPLETE,2026-08-01T10:00:00Z,2026-08-05T00:00:00Z,Please send me a full export copy of my personal information under GDPR Article 15 right to access.

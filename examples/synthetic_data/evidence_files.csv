@@ -1,0 +1,3 @@
+file_id,file_path,origin,captured_at
+ev_syn_01,evidence/databases/replica_snapshot.sql,reporting_replica,2026-06-03T00:00:00Z
+ev_syn_02,evidence/records/export_manifest.json,export_service,2026-06-03T10:00:00Z

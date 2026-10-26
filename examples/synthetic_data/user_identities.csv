@@ -1,0 +1,4 @@
+user_id,name,email,phone,email_hash,updated_at
+synth_user_01,Alice Example,alice.example@testcorp.internal,+15550101,a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0,2026-03-01T10:00:00Z
+synth_user_02,Bob Sample,bob.sample@testcorp.internal,+15550102,b2c3d4e5f6a7890123456789abcdef0123456789abcdef0123456789abcdef1,2026-04-01T12:00:00Z
+synth_user_03,Charlie Mock,charlie.mock@testcorp.internal,+15550103,c3d4e5f6a7b8890123456789abcdef0123456789abcdef0123456789abcdef2,2026-05-01T09:30:00Z

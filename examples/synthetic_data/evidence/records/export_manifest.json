@@ -1,0 +1,13 @@
+{
+  "manifest_id": "export_manifest_01",
+  "generated_at": "2026-06-03T10:00:00Z",
+  "account_tombstones": [
+    {
+      "user_id": "synth_user_01",
+      "status": "TOMBSTONED",
+      "email": null,
+      "full_name": null,
+      "phone": null
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+rule_id,data_category,condition,required_action,retention_period_days,notes
+RULE_001,PRIMARY_ACCOUNT,REQUESTED_DELETION,ACCOUNT_TOMBSTONE,0,Remove direct PII but retain stable user_id reference
+RULE_002,READ_REPLICA,REQUESTED_DELETION,DELETE,0,Purge replica rows completely
+RULE_003,ACTIVE_FLOW,REQUESTED_DELETION,DISABLE_FLOW,0,Stop active connectors or export jobs
+RULE_004,SECURITY_AUDIT,LEGAL_HOLD,RETAIN,2555,Preserve tamper-proof security log records

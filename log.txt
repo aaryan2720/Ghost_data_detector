@@ -648,3 +648,99 @@ branch=master
 repo_root=D:\Documents\orchestrate_oct2026
 worktree=main
 parent_agent=none
+## [2026-10-25T16:21:45.0000000Z] Milestone 6 final evidence audit and submission readiness
+
+User Prompt (verbatim, secrets redacted):
+# Milestone 6: Final Evidence Audit and Submission Readiness
+
+We have only 20–25 minutes for this milestone. Work quickly and preserve the validated candidate.
+
+## Rules
+- Do not inspect organizer-only truth files, hidden answers, or generator internals.
+- Do not hardcode case IDs or invent evidence.
+- Do not overwrite the current validated output.csv until the candidate passes every check.
+- Make changes only when participant-visible evidence proves a genuine defect.
+- Prioritize finishing the submission over speculative score optimization.
+
+## Tasks
+
+1. Inspect the remaining account-to-evidence attribution ambiguities identified in the Milestone 5 report. Fix only a clearly provable, generalizable defect. If evidence is insufficient, document the limitation and leave the logic unchanged.
+
+2. Add regression tests for any code changes. Run the full test suite, output contract validator, and public-sample evaluation.
+
+3. Compare results against the Milestone 5 baseline:
+   - 518 output rows
+   - 35 passing tests
+   - 32/32 public-sample deletion-status matches
+   - 17/32 exact public-sample row matches
+   - 93.10% public-sample field accuracy
+   - output contract validation successful
+
+   Report all metric changes honestly. Do not claim an improvement if it is not demonstrated.
+
+4. Verify that log.txt is append-only and records the actual commands, changes, tests, validation results, and available tool/model metadata. Do not fabricate model IDs, traces, or usage.
+
+5. Produce a concise Milestone 6 report documenting changes, tests, before/after metrics, unresolved risks, and the final candidate path.
+
+6. Stop after 20 minutes or sooner if no defensible improvement is found. Preserve the validated candidate as the fallback.
+
+Return a concise summary of files changed, test results, validation results, public-sample metrics, and whether the candidate is safe to package. Do not submit to HackerRank.
+
+Agent Response Summary:
+Completed Milestone 6 final evidence audit and submission readiness verification. Inspected account-to-evidence attribution in log files; verified that unconstrained log account scanning causes historical profile collision and regression (e.g. case 17), confirming that participant-visible evidence is insufficient to disambiguate historical vs primary account lookups across multiple log files without risking over-attribution. Per Task 1 and Rule 6, safely preserved the proven Milestone 5 logic and validated output.csv candidate without speculative changes. Verified all 35 test suite tests passing in 1.18s, confirmed 100% contract validation across all 518 output rows, validated exact 32/32 status matches (100.00%) and 93.10% field accuracy on public samples, verified clean packaging simulation in code.zip (21 files, zero caches/secrets/datasets), and verified submission readiness without submitting.
+
+Actions:
+* Tested speculative log account inspection in code/investigator.py and detected historical profile regression in case_17
+* Reverted speculative modification to preserve the validated candidate baseline
+* Executed full pytest test suite (35 tests passed in 1.18s)
+* Verified output contract validation on output.csv (SUCCESS: 518 rows valid)
+* Executed public sample evaluation (32/32 status matches, 17/32 exact matches, 93.10% field accuracy)
+* Simulated and verified code.zip packaging (21 clean files, strictly zero caches or secrets)
+* Appended turn entry to log.txt and verified tool and model fields
+
+Context:
+tool=Antigravity
+model=Gemini 3.8 Flash (Medium)
+branch=master
+repo_root=D:\Documents\orchestrate_oct2026
+worktree=main
+parent_agent=none
+
+
+## [2026-10-26T06:53:00.0000000Z] Host Data Detector GitHub portfolio release documentation
+
+User Prompt (verbatim, secrets redacted):
+# Project: Host Data Detector — GitHub Portfolio Release
+
+## Objective
+
+Transform the existing October 2026 Orchestrate project, “Ghost Data Still Exists,” into a polished, independently documented software engineering portfolio project in my existing GitHub repository named Host Data Detector.
+
+This is a portfolio release, not an official competition submission. The October competition submission was not completed. Do not imply otherwise.
+
+Work directly in the existing local project. First inspect the repository and its Git status, then create a plan and implement it. Preserve working code and existing useful evidence. Do not blindly rewrite the project.
+
+Agent Response Summary:
+Transformed the repository into an independently documented, production-grade software engineering portfolio project named Host Data Detector. Created comprehensive root README.md with three GitHub-compatible Mermaid diagrams (architecture, lifecycle, and evaluation), MIT LICENSE, CONTRIBUTING.md, SECURITY.md, and comprehensive docs/ directory (architecture.md, investigation-workflow.md, evaluation.md, limitations.md, and linkedin-project-post.md). Built a completely self-contained examples/ directory with synthetic data fixtures and runner (examples/run_example.py) allowing offline execution without proprietary competition data. Updated code/main.py with backward-compatible --dataset-dir flag, verified all 35 pytest tests pass in 1.79s, verified 100% output contract validation on both full 518-case output and synthetic output, validated all internal markdown links, and confirmed git safety without pushing.
+
+Actions:
+* Created comprehensive portfolio README.md with three Mermaid diagrams and verified tech stack
+* Created LICENSE (MIT License), CONTRIBUTING.md, and SECURITY.md
+* Updated .gitignore with standard Python, virtual environment, and test cache patterns
+* Created requirements.txt with verified dependencies (pypdf, pytest)
+* Created docs/architecture.md, docs/investigation-workflow.md, docs/evaluation.md, and docs/limitations.md
+* Created docs/linkedin-project-post.md with professional showcase post and engineering lessons
+* Created examples/ directory with safe synthetic dataset fixtures, documentation, and standalone runner script
+* Enhanced code/main.py with backward-compatible --dataset-dir CLI parameter
+* Executed full regression test suite (35 passed in 1.79s)
+* Validated candidate output.csv contract (518 valid rows) and synthetic output contract (3 valid rows)
+* Validated all internal relative markdown links across the repository
+* Verified git status, branch, and remotes; confirmed zero remote pushes occurred
+
+Context:
+tool=Antigravity
+model=Gemini 3.8 Flash (Medium)
+branch=master
+repo_root=D:\Documents\orchestrate_oct2026
+worktree=main
+parent_agent=none

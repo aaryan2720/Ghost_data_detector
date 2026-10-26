@@ -1,0 +1,4 @@
+activity_id,event_time,event_type,source_system,target_system,resource_id,reported_result,details
+act_syn_001,2026-06-02T08:30:00Z,DELETE_USER,deletion_worker,account_service,account_001,SUCCESS,Deletion worker submitted primary profile account_001 to account_service for synth_user_01
+act_syn_002,2026-07-02T10:00:00Z,DELETE_USER,deletion_worker,account_service,account_002,SUCCESS,Deletion worker submitted primary profile account_002 to account_service for synth_user_02
+act_syn_003,2026-07-02T04:00:00Z,SCHEDULE_SYNC,sync_service,data_warehouse,search_sync_02,ACTIVE,Active recurring customer sync connector for user synth_user_02

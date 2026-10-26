@@ -21,16 +21,16 @@ from code.replay import replay_samples
 from code.validator import OutputValidationError, validate_output_file
 
 
-def run_validation(output_path: Path, expected_cases_path: Path) -> int:
+def run_validation(output_path: Path, expected_cases_path: Path, dataset_dir: str = "dataset") -> int:
     print(f"Validating output file: {output_path}")
     if not output_path.is_file():
         print(f"Error: Output file does not exist: {output_path}")
         return 1
 
     try:
-        manifest = load_evidence_manifest("dataset/evidence_files.csv")
-        activities = load_system_activity("dataset/system_activity.csv")
-        audit_logs = load_user_audit_log("dataset/user_audit_log.csv")
+        manifest = load_evidence_manifest(f"{dataset_dir}/evidence_files.csv")
+        activities = load_system_activity(f"{dataset_dir}/system_activity.csv")
+        audit_logs = load_user_audit_log(f"{dataset_dir}/user_audit_log.csv")
         valid_ev_ids = (
             {e.file_id for e in manifest}
             | {a.activity_id for a in activities}
@@ -161,20 +161,26 @@ def main() -> int:
         default=Path("dataset/sample_output.csv"),
         help="Path to ground truth CSV for evaluation",
     )
+    parser.add_argument(
+        "--dataset-dir",
+        type=str,
+        default="dataset",
+        help="Directory containing supporting dataset files (default: dataset)",
+    )
 
     args = parser.parse_args()
 
     if args.mode == "investigate":
-        return run_investigation(args.requests, args.output)
+        return run_investigation(args.requests, args.output, args.dataset_dir)
     elif args.mode == "verify-samples":
         print("Running deterministic public-sample contract verification (fixture baseline)...")
-        val_code = run_validation(Path("dataset/sample_output.csv"), Path("dataset/sample_deletion_requests.csv"))
+        val_code = run_validation(Path("dataset/sample_output.csv"), Path("dataset/sample_deletion_requests.csv"), args.dataset_dir)
         if val_code != 0:
             return val_code
         rep_code = run_replay(Path("dataset/sample_output.csv"), Path("dataset/sample_output.csv"))
         return rep_code
     elif args.mode == "validate":
-        return run_validation(args.output, args.expected)
+        return run_validation(args.output, args.expected, args.dataset_dir)
     elif args.mode == "replay":
         return run_replay(args.output, args.truth)
     elif args.mode == "evaluate":

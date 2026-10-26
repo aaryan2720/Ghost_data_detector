@@ -1,0 +1,2 @@
+audit_id,user_id,event_time,field_name,old_value,new_value
+audit_syn_01,synth_user_02,2026-01-15T08:00:00Z,email,bob.old@sample.com,bob.sample@testcorp.internal
