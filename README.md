@@ -1,4 +1,4 @@
-# Host Data Detector
+# Ghost Data Detector
 
 **An Evidence-Grounded Deletion Auditing Engine for Distributed Systems**
 
