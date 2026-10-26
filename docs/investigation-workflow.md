@@ -7,68 +7,41 @@ This document details the multi-stage decision pipeline used by **Host Data Dete
 ## Investigation Lifecycle
 
 ```mermaid
-stateDiagram-v2
-    [*] --> IngestRequest: Deletion Request Received
-    IngestRequest --> IntentClassification: Parse request_text
-    
-    state IntentClassification {
-        CheckErasureIntent: Erasure Request (GDPR Art 17)?
-        CheckAccessIntent: Access / Rectification / Marketing?
-    }
-    
-    IntentClassification --> NotApplicable: Non-Deletion Intent
-    NotApplicable --> [*]: Status = NOT_APPLICABLE, steps = []
-    
-    IntentClassification --> IdentityResolution: Confirmed Erasure Intent
-    
-    state IdentityResolution {
-        LookupCurrentSnapshot: Match current email / phone / hash
-        TraverseAuditLog: Reconstruct historical emails / identifiers
-        BuildSearchKeySet: User ID + all historical variants
-    }
-    
-    IdentityResolution --> TemporalScoping: Identity Set Grounded
-    
-    state TemporalScoping {
-        FilterManifest: captured_at <= audit_at
-        FilterPostRequest: captured_at >= requested_at
-    }
-    
-    TemporalScoping --> EvidenceInvestigation: Admissible Evidence Envelopes
-    
-    state EvidenceInvestigation {
-        InspectSQLReplicas: Check regional & failover tables
-        InspectLogs: Check read/write traces & exposed PII
-        InspectBackups: Assess restore_allowed flags
-        InspectConnectors: Detect active recurring sync jobs
-        VerifyTombstones: Ensure direct PII removed from tombstones
-    }
-    
-    EvidenceInvestigation --> EvaluateFindings: Aggregate Violations
-    
-    state EvaluateFindings {
-        HasViolations: Any surviving records, active flows, or restore risks?
-    }
-    
-    EvaluateFindings --> PlanRemediation: Yes (Status = INCOMPLETE)
-    EvaluateFindings --> SynthesizeVerification: No (Status = COMPLETE)
-    
-    state PlanRemediation {
-        Step1_DisableFlows: DISABLE_DATA_FLOW (Stop replication)
-        Step2_BlockRestores: BLOCK_RESTORE (Prevent backup revival)
-        Step3_RemediateRecords: DELETE_RECORD / REDACT_RECORD / ANONYMIZE_RECORD
-        Step4_PlanFutureVerification: VERIFY_* checks (evidence_id = "")
-    }
-    
-    state SynthesizeVerification {
-        Step1_ProveAbsence: Evidence-backed VERIFY_RECORD_ABSENT
-        Step2_ProveTombstone: Evidence-backed VERIFY_RECORD_REDACTED
-        Step3_ProveRetained: Evidence-backed VERIFY_RECORD_PRESENT (Legal holds)
-    }
-    
-    PlanRemediation --> OutputSynthesis: Emit FINDING -> REMEDIATION -> VERIFICATION
-    SynthesizeVerification --> OutputSynthesis: Emit VERIFICATION (Only evidence-backed)
-    OutputSynthesis --> [*]: Final AuditOutputRow
+flowchart TD
+    START(["Deletion Request Received"]) --> INGEST["Ingest Request Metadata"]
+    INGEST --> INTENT{"Intent Classification<br/>(request_text)"}
+
+    INTENT -->|"Non-Deletion Request<br/>(GDPR Art 15, 16, 21)"| NA["Status: NOT_APPLICABLE<br/>steps: []"]
+    NA --> DONE(["Complete Audit Output"])
+
+    INTENT -->|"Erasure Request<br/>(GDPR Art 17)"| RESOLVE["Identity Resolution<br/>(Reconstruct historical identifiers)"]
+
+    RESOLVE --> SCOPE["Temporal Scoping<br/>(Admissible Evidence: captured_at <= audit_at)"]
+
+    SCOPE --> SCAN["Multi-Modal Evidence Scan"]
+    subgraph sub_scan["Evidence Scanning Channels"]
+        SCAN --> S_SQL["SQL Replicas: Lingering active rows"]
+        SCAN --> S_LOG["Logs: Exposed PII & trace records"]
+        SCAN --> S_BAK["Backups: restore_allowed flags"]
+        SCAN --> S_SYNC["Connectors: Active sync jobs"]
+    end
+
+    S_SQL --> DECIDE{"Violations Detected?"}
+    S_LOG --> DECIDE
+    S_BAK --> DECIDE
+    S_SYNC --> DECIDE
+
+    DECIDE -->|"No (Zero Violations)"| COMPLETE["Status: COMPLETE<br/>Synthesize evidence-backed verification checks"]
+    DECIDE -->|"Yes (Surviving Data / Active Flows)"| INCOMPLETE["Status: INCOMPLETE<br/>Synthesize ordered remediation plan"]
+
+    subgraph sub_remediation["Incomplete Case Pipeline"]
+        INCOMPLETE --> P1["1. FINDING: Report lingering data, flows, or risks"]
+        P1 --> P2["2. REMEDIATION: Disable flows & block restores before modifying data"]
+        P2 --> P3["3. VERIFICATION: Plan future checks (evidence_id = empty)"]
+    end
+
+    COMPLETE --> DONE
+    P3 --> DONE
 ```
 
 ---

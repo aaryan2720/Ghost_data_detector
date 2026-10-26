@@ -9,32 +9,32 @@
 ## Component Architecture
 
 ```mermaid
-graph TD
-    subgraph Input & Identity
-        REQ[Deletion Requests CSV] --> LOADER[Loader & Schema Validator]
-        UID[User Identities CSV] --> IDRES[Identity Resolver]
-        UAL[User Audit Log CSV] --> IDRES
-        LOADER --> CLASS[Intent Classifier]
+flowchart TD
+    subgraph sub_input["Input & Identity"]
+        REQ["Deletion Requests CSV"] --> LOADER["Loader & Schema Validator"]
+        UID["User Identities CSV"] --> IDRES["Identity Resolver"]
+        UAL["User Audit Log CSV"] --> IDRES
+        LOADER --> CLASS["Intent Classifier"]
     end
 
-    subgraph Evidence & Activity
-        MAN[Evidence Manifest] --> EVIDX[Evidence Index]
-        ACT[System Activity CSV] --> CASEINV[Case Investigator]
-        RULES[Deletion Rules CSV] --> CASEINV
-        RAW_EV[(Raw Evidence: SQL, JSON, Logs, PDF)] --> EVIDX
+    subgraph sub_evidence["Evidence & Activity"]
+        MAN["Evidence Manifest"] --> EVIDX["Evidence Index"]
+        ACT["System Activity CSV"] --> CASEINV["Case Investigator"]
+        RULES["Deletion Rules CSV"] --> CASEINV
+        RAW_EV[("Raw Evidence: SQL, JSON, Logs, PDF")] --> EVIDX
     end
 
-    subgraph Core Decision Engine
-        CLASS -->|is_deletion_request| CASEINV
-        IDRES -->|Resolved Identifiers| CASEINV
-        EVIDX -->|Admissible Evidence <= audit_at| CASEINV
-        CASEINV --> SYNTH[Decision & Step Synthesizer]
+    subgraph sub_core["Core Decision Engine"]
+        CLASS -->|"is_deletion_request"| CASEINV
+        IDRES -->|"Resolved Identifiers"| CASEINV
+        EVIDX -->|"Admissible Evidence (<= audit_at)"| CASEINV
+        CASEINV --> SYNTH["Decision & Step Synthesizer"]
     end
 
-    subgraph Output & Verification
-        SYNTH --> ROW[AuditOutputRow]
-        ROW --> OUT[output.csv]
-        OUT --> VAL[Contract & Schema Validator]
+    subgraph sub_output["Output & Verification"]
+        SYNTH --> ROW["AuditOutputRow"]
+        ROW --> OUT["output.csv"]
+        OUT --> VAL["Contract & Schema Validator"]
     end
 ```
 

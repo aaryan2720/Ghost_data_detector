@@ -56,32 +56,32 @@ Workflow status claims and service responses are merely **claims**. True complia
 ## 4. Architecture Overview
 
 ```mermaid
-graph TD
-    subgraph Data Loading & Scoping
-        REQ[Deletion Requests CSV] --> LOADER[CSV Loader & Validator]
-        UID[User Identities CSV] --> IDRES[Identity Resolver]
-        UAL[User Audit Log CSV] --> IDRES
-        LOADER --> CLASS[Multilingual Intent Classifier]
+flowchart TD
+    subgraph sub_input["Data Loading & Scoping"]
+        REQ["Deletion Requests CSV"] --> LOADER["CSV Loader & Schema Validator"]
+        UID["User Identities CSV"] --> IDRES["Identity Resolver"]
+        UAL["User Audit Log CSV"] --> IDRES
+        LOADER --> CLASS["Multilingual Intent Classifier"]
     end
 
-    subgraph Evidence Ingestion
-        MAN[Evidence Manifest] --> EVIDX[Evidence Index]
-        ACT[System Activity CSV] --> CASEINV[Case Investigator]
-        RULES[Deletion Rules CSV] --> CASEINV
-        RAW[(Multi-Modal Evidence: SQL, JSON, Logs, PDF)] --> EVIDX
+    subgraph sub_evidence["Evidence Ingestion"]
+        MAN["Evidence Manifest"] --> EVIDX["Evidence Index"]
+        ACT["System Activity CSV"] --> CASEINV["Case Investigator"]
+        RULES["Deletion Rules CSV"] --> CASEINV
+        RAW[("Multi-Modal Evidence: SQL, JSON, Logs, PDF")] --> EVIDX
     end
 
-    subgraph Core Decision Engine
-        CLASS -->|Authorized Deletion?| CASEINV
-        IDRES -->|Canonical Search Key Set| CASEINV
-        EVIDX -->|Admissible Evidence <= audit_at| CASEINV
-        CASEINV --> PLANNER[Remediation & Verification Synthesizer]
+    subgraph sub_core["Core Decision Engine"]
+        CLASS -->|"Authorized Deletion?"| CASEINV
+        IDRES -->|"Canonical Search Key Set"| CASEINV
+        EVIDX -->|"Admissible Evidence (<= audit_at)"| CASEINV
+        CASEINV --> PLANNER["Remediation & Verification Synthesizer"]
     end
 
-    subgraph Output & Verification
-        PLANNER --> ROW[AuditOutputRow]
-        ROW --> OUT[output.csv]
-        OUT --> VAL[Schema & Invariant Validator]
+    subgraph sub_output["Output & Verification"]
+        PLANNER --> ROW["AuditOutputRow"]
+        ROW --> OUT["output.csv"]
+        OUT --> VAL["Schema & Invariant Validator"]
     end
 ```
 
@@ -90,43 +90,41 @@ graph TD
 ## 5. Deletion Investigation Lifecycle
 
 ```mermaid
-stateDiagram-v2
-    [*] --> IngestRequest: Deletion Request Received
-    IngestRequest --> IntentClassification: Parse request_text
-    
-    IntentClassification --> NotApplicable: Non-Deletion Request (GDPR Art 15/16/21)
-    NotApplicable --> [*]: Status = NOT_APPLICABLE, steps = []
-    
-    IntentClassification --> IdentityResolution: Erasure Request (GDPR Art 17)
-    
-    IdentityResolution --> TemporalScoping: Current + Historical Identifiers
-    TemporalScoping --> EvidenceScan: Evidence <= audit_at
-    
-    state EvidenceScan {
-        ScanSQLReplicas: Check for lingering rows in read/failover replicas
-        ScanLogs: Detect exposed PII in application & support logs
-        ScanBackups: Assess restore_allowed flags in archives
-        ScanConnectors: Identify active recurring sync connectors
-    }
-    
-    EvidenceScan --> Decision: Evaluate Violations
-    
-    Decision --> CompleteCase: Zero Lingering Records or Risks
-    Decision --> IncompleteCase: Lingering Data / Active Flows / Restore Risks
-    
-    state IncompleteCase {
-        Phase1: FINDING (Cite evidence_id)
-        Phase2: REMEDIATION (Disable flows -> Block restores -> Remediate records)
-        Phase3: VERIFICATION (Plan future checks, evidence_id = "")
-    }
-    
-    state CompleteCase {
-        PhaseVerified: VERIFICATION (Evidence-backed proof of absence or tombstone)
-    }
-    
-    CompleteCase --> EmitOutput: Status = COMPLETE
-    IncompleteCase --> EmitOutput: Status = INCOMPLETE
-    EmitOutput --> [*]: Write output.csv
+flowchart TD
+    START(["Deletion Request Received"]) --> INGEST["Ingest Request Metadata"]
+    INGEST --> INTENT{"Intent Classification<br/>(request_text)"}
+
+    INTENT -->|"Non-Deletion Request<br/>(GDPR Art 15, 16, 21)"| NA["Status: NOT_APPLICABLE<br/>steps: []"]
+    NA --> DONE(["Complete Audit Output"])
+
+    INTENT -->|"Erasure Request<br/>(GDPR Art 17)"| RESOLVE["Identity Resolution<br/>(Reconstruct historical identifiers)"]
+
+    RESOLVE --> SCOPE["Temporal Scoping<br/>(Admissible Evidence: captured_at <= audit_at)"]
+
+    SCOPE --> SCAN["Multi-Modal Evidence Scan"]
+    subgraph sub_scan["Evidence Scanning Channels"]
+        SCAN --> S_SQL["SQL Replicas: Lingering active rows"]
+        SCAN --> S_LOG["Logs: Exposed PII & trace records"]
+        SCAN --> S_BAK["Backups: restore_allowed flags"]
+        SCAN --> S_SYNC["Connectors: Active sync jobs"]
+    end
+
+    S_SQL --> DECIDE{"Violations Detected?"}
+    S_LOG --> DECIDE
+    S_BAK --> DECIDE
+    S_SYNC --> DECIDE
+
+    DECIDE -->|"No (Zero Violations)"| COMPLETE["Status: COMPLETE<br/>Synthesize evidence-backed verification checks"]
+    DECIDE -->|"Yes (Surviving Data / Active Flows)"| INCOMPLETE["Status: INCOMPLETE<br/>Synthesize ordered remediation plan"]
+
+    subgraph sub_remediation["Incomplete Case Pipeline"]
+        INCOMPLETE --> P1["1. FINDING: Report lingering data, flows, or risks"]
+        P1 --> P2["2. REMEDIATION: Disable flows & block restores before modifying data"]
+        P2 --> P3["3. VERIFICATION: Plan future checks (evidence_id = empty)"]
+    end
+
+    COMPLETE --> DONE
+    P3 --> DONE
 ```
 
 ---
@@ -134,28 +132,28 @@ stateDiagram-v2
 ## 6. Validation and Evaluation Pipeline
 
 ```mermaid
-graph TD
-    subgraph Inputs
-        SAMPLE_REQ[dataset/sample_deletion_requests.csv]
-        SAMPLE_TRUTH[dataset/sample_output.csv]
+flowchart TD
+    subgraph sub_eval_in["Inputs"]
+        SAMPLE_REQ["dataset/sample_deletion_requests.csv"]
+        SAMPLE_TRUTH["dataset/sample_output.csv"]
     end
 
-    subgraph Independent Execution
-        SAMPLE_REQ --> ENGINE[Case Investigator]
-        ENGINE --> PRED[Generated Predictions]
+    subgraph sub_indep["Independent Execution"]
+        SAMPLE_REQ --> ENGINE["Case Investigator Engine"]
+        ENGINE --> PRED["Generated Predictions"]
     end
 
-    subgraph Evaluation Harness
-        PRED --> EVAL[code/evaluation/main.py]
+    subgraph sub_harness["Evaluation Harness"]
+        PRED --> EVAL["code/evaluation/main.py"]
         SAMPLE_TRUTH --> EVAL
-        EVAL --> S_ACC[Status Accuracy: 32/32 100%]
-        EVAL --> E_MATCH[Exact Row Match: 17/32 53.12%]
-        EVAL --> F_ACC[Field Accuracy: 1173/1260 93.10%]
+        EVAL --> S_ACC["Status Accuracy: 32/32 (100%)"]
+        EVAL --> E_MATCH["Exact Row Match: 17/32 (53.12%)"]
+        EVAL --> F_ACC["Field Accuracy: 1,173/1,260 (93.10%)"]
     end
 
-    subgraph Strict Contract Validation
-        PRED --> VAL[code/validator.py]
-        VAL --> PASS[100% Contract Valid Pass]
+    subgraph sub_contract["Strict Contract Validation"]
+        PRED --> VAL["code/validator.py"]
+        VAL --> PASS["100% Contract Valid Pass"]
     end
 ```
 

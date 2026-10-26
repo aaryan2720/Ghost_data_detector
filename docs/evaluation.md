@@ -7,28 +7,28 @@ This document describes the validation harness, evaluation methodology, measured
 ## Evaluation Architecture
 
 ```mermaid
-graph TD
-    subgraph Evaluation Inputs
-        REQ[dataset/sample_deletion_requests.csv]
-        EXP[dataset/sample_output.csv]
+flowchart TD
+    subgraph sub_eval_in["Evaluation Inputs"]
+        REQ["dataset/sample_deletion_requests.csv"]
+        EXP["dataset/sample_output.csv"]
     end
 
-    subgraph Independent Prediction
-        REQ --> INV[Case Investigator Engine]
-        INV --> PRED[Generated Candidate Predictions]
+    subgraph sub_indep["Independent Prediction"]
+        REQ --> INV["Case Investigator Engine"]
+        INV --> PRED["Generated Candidate Predictions"]
     end
 
-    subgraph Evaluation Harness
-        EXP --> EVAL[code/evaluation/main.py]
+    subgraph sub_harness["Evaluation Harness"]
+        EXP --> EVAL["code/evaluation/main.py"]
         PRED --> EVAL
-        EVAL --> STATS[Status Accuracy: 32/32 100%]
-        EVAL --> EXACT[Exact Row Match: 17/32 53.12%]
-        EVAL --> FIELD[Field Accuracy: 1173/1260 93.10%]
+        EVAL --> STATS["Status Accuracy: 32/32 (100%)"]
+        EVAL --> EXACT["Exact Row Match: 17/32 (53.12%)"]
+        EVAL --> FIELD["Field Accuracy: 1,173/1,260 (93.10%)"]
     end
 
-    subgraph Contract & Schema Validation
-        PRED --> VAL[code/validator.py]
-        VAL --> SCHEMA_OK[100% Valid Contract Pass]
+    subgraph sub_contract["Contract & Schema Validation"]
+        PRED --> VAL["code/validator.py"]
+        VAL --> SCHEMA_OK["100% Valid Contract Pass"]
     end
 ```
 
